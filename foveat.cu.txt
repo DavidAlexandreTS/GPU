@@ -1,0 +1,50 @@
+#include <stdio.h>
+
+__global__ void applyFoveatedRendering(unsigned char *image, float *heatMap, int width, int height)
+{
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if (x < width && y < height)
+{
+        int index = y * width + x;
+
+        
+        float intensity = heatMap[index];
+
+        
+        image[index] *= intensity;
+    }
+}
+
+int main()
+{
+    //carregar imagem
+
+    int width = /* largura da imagem */;
+    int height = /* altura da imagem */;
+
+    
+    unsigned char *d_image;
+    float *d_heatMap;
+
+    cudaMalloc((void**)&d_image, width * height * sizeof(unsigned char) * 3);
+    cudaMalloc((void**)&d_heatMap, width * height * sizeof(float));
+
+    
+    cudaMemcpy(d_image, /* imagem na CPU */, width * height * sizeof(unsigned char) * 3, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_heatMap, /* mapa de calor na CPU */, width * height * sizeof(float), cudaMemcpyHostToDevice);
+
+    // tamanho do bloco e da grade
+    dim3 blockDim(16, 16);
+    dim3 gridDim((width + blockDim.x - 1) / blockDim.x, (height + blockDim.y - 1) / blockDim.y);
+
+    // kernel CUDA
+    applyFoveatedRendering<<<gridDim, blockDim>>>(d_image, d_heatMap, width, height);
+
+  
+    cudaFree(d_image);
+    cudaFree(d_heatMap);
+
+    return 0;
+}
